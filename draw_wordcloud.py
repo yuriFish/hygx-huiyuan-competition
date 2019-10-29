@@ -12,6 +12,7 @@ from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
 from wordcloud import WordCloud,ImageColorGenerator
+from operator import itemgetter
 
 
 def get_book_num(file, schoolname):
@@ -28,17 +29,21 @@ def get_book_num(file, schoolname):
     
     
 def get_word_cloud(schoolname):
-    book_title = ''
+#    schoolname = '10270上海师范大学'
     book_name = 'df_' + schoolname + '_title.txt'
     print("正在提取%s的词云数据" % schoolname)
     
+    book = {}
     with open(book_name,'r', encoding='utf-8') as f:
-        for line in f:
-            book_title += line.replace(' ', '')
+        for name in f:
+            name = name.replace('\n', '')
+            if name not in book:
+                book[name] = 1
+            else:
+                book[name] += 1
     print('数据提取完毕')
-    
-    pattern = re.compile(u'\t|\.|-|:|;|\)|\(|\?|"') # 定义正则表达式匹配模式
-    book_title = re.sub(pattern, '', book_title) # 将符合模式的字符去除
+    book_order = sorted(book.items(),key=itemgetter(1),reverse=True)[:150] # 提取排名前150做词云
+    book_dict = dict(book_order)
     
     image= Image.open('./book.jpg')
     graph = np.array(image)
@@ -50,18 +55,16 @@ def get_word_cloud(schoolname):
     mask=graph,
     max_words=150, # 最多显示词数
     max_font_size=100 # 字体最大值
-    ).generate(book_title)
+    )
+    wordcloud.generate_from_frequencies(book_dict)  # 根据给定词频生成词云
     print('词云处理完毕')
-    
-     # 生成颜色值
     image_colors = ImageColorGenerator(graph)
-     # 下面代码表示显示图片
     plt.imshow(wordcloud.recolor(color_func=image_colors), interpolation="bilinear")
     plt.axis("off")
     plt.show()
     wordcloud.to_file('%s_wordcloud.jpg' % schoolname)
     
-
+    
 if __name__ == "__main__":
     os.chdir("D:\\study\\program\\python\\workspace\\hygx")
     
